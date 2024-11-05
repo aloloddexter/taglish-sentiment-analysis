@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopee Product Comment Sentiment Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Shopee Product Comment Sentiment Analysis</h1>
+    <form id="scrapeForm">
+        <label for="url">Enter Shopee Product URL:</label>
+        <input type="text" id="url" name="url" required>
+        <button type="submit">Scrape Comments</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById("scrapeForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const url = document.getElementById("url").value;
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "Scraping, please wait...";
+
+            const response = await fetch('/scrape', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ url })
+            });
+            const data = await response.json();
+
+            if (data.error) {
+                resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
+            } else {
+                resultDiv.innerHTML = `<p>${data.message}</p>`;
+                if (data.filename) {
+                    resultDiv.innerHTML += `<p><a href="/download/${data.filename}" download>Download CSV</a></p>`;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
