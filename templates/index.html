@@ -13,29 +13,49 @@
         <input type="text" id="url" name="url" required>
         <button type="submit">Scrape Comments</button>
     </form>
-    <div id="result"></div>
+    <div id="result">
+        <!-- This will display the scraping results or error messages -->
+    </div>
+    <div id="downloadLink" style="margin-top: 20px;">
+        <!-- This will dynamically add a link to download the CSV -->
+    </div>
+    <div id="chartContainer" style="margin-top: 20px;">
+        <!-- This will display the sentiment chart -->
+    </div>
 
     <script>
-        document.getElementById("scrapeForm").onsubmit = async (e) => {
-            e.preventDefault();
+        document.getElementById("scrapeForm").onsubmit = async function(e) {
+            e.preventDefault();  // Prevents the default form submission action
             const url = document.getElementById("url").value;
             const resultDiv = document.getElementById("result");
+            const downloadLinkDiv = document.getElementById("downloadLink");
+            const chartDiv = document.getElementById("chartContainer");
             resultDiv.innerHTML = "Scraping, please wait...";
+            downloadLinkDiv.innerHTML = ""; // Clear previous links if any
+            chartDiv.innerHTML = ""; // Clear the previous chart
 
-            const response = await fetch('/scrape', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ url })
-            });
-            const data = await response.json();
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ 'url': url }) // Send the URL as form data
+                });
+                const data = await response.json();
 
-            if (data.error) {
-                resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
-            } else {
-                resultDiv.innerHTML = `<p>${data.message}</p>`;
-                if (data.filename) {
-                    resultDiv.innerHTML += `<p><a href="/download/${data.filename}" download>Download CSV</a></p>`;
+                if (data.error) {
+                    resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;  // Display errors
+                } else {
+                    resultDiv.innerHTML = `<p>${data.message}</p>`;  // Display success message
+                    if (data.filename) {
+                        downloadLinkDiv.innerHTML = `<a href="/download/${data.filename}" download>Download CSV</a>`;
+                    }
+                    if (data.chart) {
+                        chartDiv.innerHTML = `<img src="/download/${data.chart}" alt="Sentiment Distribution Chart" style="width:100%; max-width:600px;">`;
+                    }
                 }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error sending request: ${error.message}</p>`;
+                console.error('Fetch error:', error);
             }
         };
     </script>

@@ -5,8 +5,16 @@ import re
 import time
 from random import randint
 import os
+import matplotlib.pyplot as plt
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 app = Flask(__name__)
+
+# Load pre-trained XLM-RoBERTa model and tokenizer
+MODEL_DIR = './trained_model/'
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
 
 def get_ids_from_url(url):
     match = re.search(r"i\.(\d+)\.(\d+)", url)
@@ -16,7 +24,6 @@ def get_ids_from_url(url):
     else:
         raise ValueError("Invalid Shopee URL format")
 
-#shopee API request
 def fetch_comments(shop_id, item_id, limit=50, offset=0, retries=3):
     url = f"https://shopee.ph/api/v2/item/get_ratings?itemid={item_id}&shopid={shop_id}&limit={limit}&offset={offset}"
     headers = {
@@ -41,32 +48,29 @@ def extract_comments(data):
     comments = []
     if data and 'data' in data and 'ratings' in data['data']:
         for rating in data['data']['ratings']:
-            # Initialize a list to store all parts of the comment
             comment_parts = []
-
-            # Check for structured tags and add them to comment_parts
             if 'tag_info' in rating:
                 for tag in rating['tag_info']:
                     tag_text = f"{tag.get('tag_name', '')}: {tag.get('tag_value', '')}"
                     comment_parts.append(tag_text)
-
-            # Add the main comment text, if available
             main_comment = rating.get('comment', '').strip()
             if main_comment:
                 comment_parts.append(main_comment)
-
-            # Combine everything into a single string with a separator
             full_comment = "\n".join(comment_parts)
-
-            # Build comment dictionary with the full comment in a single "Comment" field
             comment = {
                 'Username': rating.get('author_username', ''),
                 'Rating': rating.get('rating_star', 0),
                 'Date and Time': pd.to_datetime(rating.get('ctime', 0), unit='s').strftime('%Y-%m-%d %H:%M'),
-                'Comment': full_comment  # All tags and main comment are in this single field
+                'Comment': full_comment
             }
             comments.append(comment)
     return comments
+
+def classify_sentiment(text):
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    outputs = model(**inputs)
+    prediction = torch.argmax(outputs.logits, dim=-1)
+    return prediction.item()
 
 @app.route('/')
 def index():
@@ -100,11 +104,24 @@ def scrape():
 
     if all_comments:
         df = pd.DataFrame(all_comments)
+        df['Sentiment'] = df['Comment'].apply(classify_sentiment)
+
+        # Visualization
+        plt.figure()
+        df['Sentiment'].value_counts().plot(kind='bar')
+        plt.title('Sentiment Distribution')
+        plt.xlabel('Sentiment')
+        plt.ylabel('Number of Comments')
+        chart_filename = 'sentiment_chart.png'
+        chart_filepath = os.path.join('static', chart_filename)
+        plt.savefig(chart_filepath)
+        plt.close()
+
         csv_filename = 'shopee_comments_formatted.csv'
         csv_filepath = os.path.join('static', csv_filename)
         df.to_csv(csv_filepath, index=False)
 
-        return jsonify({'message': f'Successfully scraped {len(all_comments)} comments.', 'filename': csv_filename})
+        return jsonify({'message': f'Successfully scraped and analyzed {len(all_comments)} comments.', 'filename': csv_filename, 'chart': chart_filename})
     else:
         return jsonify({'error': 'No comments found or unable to fetch comments.'})
 

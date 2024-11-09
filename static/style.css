@@ -15,4 +15,40 @@ form {
 input, button {
     padding: 10px;
     font-size: 1em;
+    border: 1px solid #ccc; /* Adds a light gray border */
+    border-radius: 5px; /* Rounds the corners of inputs and buttons */
+}
+
+button {
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    border: none; /* No border */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+button:hover {
+    background-color: #45a049; /* Darker green background on hover */
+    cursor: pointer; /* Changes cursor to pointer to indicate it's clickable */
+}
+
+input:focus {
+    border-color: #4CAF50; /* Green border when input is focused */
+    outline: none; /* Removes the default focus outline */
+}
+
+@media (max-width: 600px) {
+    form {
+        width: 90%; /* Makes the form wider on smaller screens */
+        margin: 20px auto; /* Keeps it centered */
+    }
+}
+
+.error-message {
+    color: red; /* Red text for errors */
+    font-weight: bold; /* Bold font for emphasis */
+}
+
+.success-message {
+    color: green; /* Green text for successful operations */
+    font-weight: bold; /* Bold font for emphasis */
 }
