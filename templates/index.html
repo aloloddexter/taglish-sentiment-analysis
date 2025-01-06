@@ -5,55 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopee Product Comment Sentiment Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>
 <body>
     <h1>Shopee Product Comment Sentiment Analysis</h1>
     <form id="scrapeForm">
         <label for="url">Enter Shopee Product URL:</label>
         <input type="text" id="url" name="url" required>
-        <button type="submit">Scrape Comments</button>
+        <button type="submit">Generate</button>
     </form>
+    
+    <!-- Loading spinner with text above -->
+    <div id="loadingContainer" style="display: none;">
+        <p id="loadingText">Scraping, please wait...</p>
+        <div class="spinner"></div>
+    </div>
+    
     <div id="result">
         <!-- This will display the scraping results or error messages -->
     </div>
     <div id="downloadLink" style="margin-top: 20px;">
         <!-- This will dynamically add a link to download the CSV -->
     </div>
-    <div id="chartContainer" style="margin-top: 20px;">
+    <div id="chartContainer" style="margin-top: 5px;">
         <!-- This will display the sentiment chart -->
     </div>
 
     <script>
+        google.charts.load('current', { 'packages': ['corechart'] });
+
+        function drawPieChart(chartData) {
+            const data = google.visualization.arrayToDataTable(chartData);
+            const options = {
+                title: 'Sentiment Distribution',
+                is3D: true,
+                width: '100%',
+                height: 600,
+                slices: {
+                    0: { color: '#4caf50' },
+                    1: { color: '#ffc107' },
+                    2: { color: '#f44336' }
+                },
+                pieSliceText: 'percentage',
+                tooltip: { trigger: 'focus' }
+            };
+            const chart = new google.visualization.PieChart(document.getElementById('chartContainer'));
+            chart.draw(data, options);
+        }
+
         document.getElementById("scrapeForm").onsubmit = async function(e) {
-            e.preventDefault();  // Prevents the default form submission action
+            e.preventDefault();
             const url = document.getElementById("url").value;
             const resultDiv = document.getElementById("result");
             const downloadLinkDiv = document.getElementById("downloadLink");
             const chartDiv = document.getElementById("chartContainer");
-            resultDiv.innerHTML = "Scraping, please wait...";
-            downloadLinkDiv.innerHTML = ""; // Clear previous links if any
-            chartDiv.innerHTML = ""; // Clear the previous chart
+            const loadingContainer = document.getElementById("loadingContainer");
+
+            // Show loading spinner
+            loadingContainer.style.display = "block";
+            resultDiv.innerHTML = "";
+            downloadLinkDiv.innerHTML = "";
+            chartDiv.innerHTML = "";
 
             try {
                 const response = await fetch('/scrape', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ 'url': url }) // Send the URL as form data
+                    body: new URLSearchParams({ 'url': url })
                 });
                 const data = await response.json();
 
+                // Hide loading spinner
+                loadingContainer.style.display = "none";
+
                 if (data.error) {
-                    resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;  // Display errors
+                    resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
                 } else {
-                    resultDiv.innerHTML = `<p>${data.message}</p>`;  // Display success message
+                    resultDiv.innerHTML = `<p>${data.message}</p>`;
                     if (data.filename) {
                         downloadLinkDiv.innerHTML = `<a href="/download/${data.filename}" download>Download CSV</a>`;
                     }
-                    if (data.chart) {
-                        chartDiv.innerHTML = `<img src="/download/${data.chart}" alt="Sentiment Distribution Chart" style="width:100%; max-width:600px;">`;
+                    if (data.chart_data) {
+                        google.charts.setOnLoadCallback(() => drawPieChart(data.chart_data));
                     }
                 }
             } catch (error) {
+                loadingContainer.style.display = "none";  // Hide loading spinner in case of error
                 resultDiv.innerHTML = `<p style="color: red;">Error sending request: ${error.message}</p>`;
                 console.error('Fetch error:', error);
             }

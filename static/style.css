@@ -15,40 +15,76 @@ form {
 input, button {
     padding: 10px;
     font-size: 1em;
-    border: 1px solid #ccc; /* Adds a light gray border */
-    border-radius: 5px; /* Rounds the corners of inputs and buttons */
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 button {
-    background-color: #4CAF50; /* Green background */
-    color: white; /* White text */
-    border: none; /* No border */
-    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #45a049; /* Darker green background on hover */
-    cursor: pointer; /* Changes cursor to pointer to indicate it's clickable */
+    background-color: #45a049;
+    cursor: pointer;
 }
 
 input:focus {
-    border-color: #4CAF50; /* Green border when input is focused */
-    outline: none; /* Removes the default focus outline */
+    border-color: #4CAF50;
+    outline: none;
 }
 
 @media (max-width: 600px) {
     form {
-        width: 90%; /* Makes the form wider on smaller screens */
-        margin: 20px auto; /* Keeps it centered */
+        width: 90%;
+        margin: 20px auto;
     }
 }
 
 .error-message {
-    color: red; /* Red text for errors */
-    font-weight: bold; /* Bold font for emphasis */
+    color: red;
+    font-weight: bold;
 }
 
 .success-message {
-    color: green; /* Green text for successful operations */
-    font-weight: bold; /* Bold font for emphasis */
+    color: green;
+    font-weight: bold;
+}
+
+#chartContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 20px auto;
+    max-width: 800px;
+    height: 600px;
+}
+
+/* Loading container styles */
+#loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 16px;
+    color: #4CAF50;
+    margin: 20px auto;
+}
+
+/* Spinner styles */
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #4CAF50;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+    margin-top: 10px; /* Adds space between the text and spinner */
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

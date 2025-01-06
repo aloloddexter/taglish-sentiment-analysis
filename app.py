@@ -5,15 +5,15 @@ import re
 import time
 from random import randint
 import os
-import matplotlib.pyplot as plt
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification
+from transformers import XLMRobertaTokenizer
 import torch
 
 app = Flask(__name__)
 
 # Load pre-trained XLM-RoBERTa model and tokenizer
-MODEL_DIR = './trained_model/'
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+MODEL_DIR = './xlm-r/'
+tokenizer = XLMRobertaTokenizer.from_pretrained(MODEL_DIR)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
 
 def get_ids_from_url(url):
@@ -66,6 +66,15 @@ def extract_comments(data):
             comments.append(comment)
     return comments
 
+def clean_data(df):
+    # Remove special characters from comments
+    df['Comment'] = df['Comment'].apply(lambda x: re.sub(r'[^a-zA-Z0-9\s]', '', x))
+
+    # Drop rows with empty comments
+    df = df[df['Comment'].str.strip() != '']
+
+    return df
+
 def classify_sentiment(text):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     outputs = model(**inputs)
@@ -104,24 +113,31 @@ def scrape():
 
     if all_comments:
         df = pd.DataFrame(all_comments)
+
+        # Clean data before analysis
+        df = clean_data(df)
+
+        # Perform sentiment analysis
         df['Sentiment'] = df['Comment'].apply(classify_sentiment)
 
-        # Visualization
-        plt.figure()
-        df['Sentiment'].value_counts().plot(kind='bar')
-        plt.title('Sentiment Distribution')
-        plt.xlabel('Sentiment')
-        plt.ylabel('Number of Comments')
-        chart_filename = 'sentiment_chart.png'
-        chart_filepath = os.path.join('static', chart_filename)
-        plt.savefig(chart_filepath)
-        plt.close()
+        # Count sentiment occurrences
+        sentiment_counts = df['Sentiment'].value_counts().to_dict()
+
+        # sentiment distribution
+        chart_data = [["Sentiment", "Count"]]
+        for sentiment, count in sentiment_counts.items():
+            sentiment_label = "Positive" if sentiment == 2 else "Neutral" if sentiment == 1 else "Negative"
+            chart_data.append([sentiment_label, count])
 
         csv_filename = 'shopee_comments_formatted.csv'
         csv_filepath = os.path.join('static', csv_filename)
         df.to_csv(csv_filepath, index=False)
 
-        return jsonify({'message': f'Successfully scraped and analyzed {len(all_comments)} comments.', 'filename': csv_filename, 'chart': chart_filename})
+        return jsonify({
+            'message': f'Successfully scraped and analyzed comments.',
+            'filename': csv_filename,
+            'chart_data': chart_data  # Send chart data
+        })
     else:
         return jsonify({'error': 'No comments found or unable to fetch comments.'})
 
