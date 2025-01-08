@@ -11,10 +11,10 @@ import torch
 
 app = Flask(__name__)
 
-# Load pre-trained model and tokenizer from Hugging Face Hub
-MODEL_CARD = "letejo/shopee-product-sentiment-analysis"
-tokenizer = XLMRobertaTokenizer.from_pretrained(MODEL_CARD)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_CARD)
+# Load pre-trained XLM-RoBERTa model and tokenizer
+MODEL_DIR = './xlm-r/'
+tokenizer = XLMRobertaTokenizer.from_pretrained(MODEL_DIR)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
 
 def get_ids_from_url(url):
     match = re.search(r"i\.(\d+)\.(\d+)", url)
